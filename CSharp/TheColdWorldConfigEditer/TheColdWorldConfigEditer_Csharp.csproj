@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>annotations</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>TheColdWorldConfigEditer</Title>
+    <SignAssembly>False</SignAssembly>
+	 <PackageId>TheColdWorldConfigEditer_Csharp</PackageId>
+     <Version>1.0.1</Version>
+     <Authors>TheColdWorld</Authors>
+	  <PackRelease>true</PackRelease>
+	  <PublishRelease>true</PublishRelease>
+	  <Description>A solution that stores settings in a file</Description>
+	  <Company>None</Company>
+	  <Copyright>© TheColdWorld</Copyright>
+	  <PackageProjectUrl>https://github.com/TheColdWorld/TheColdWorldConfigEditer</PackageProjectUrl>
+	  <PackageReadmeFile>README.md</PackageReadmeFile>
+	  <RepositoryUrl>git@github.com:TheColdWorld/TheColdWorldConfigEditer.git</RepositoryUrl>
+	  <RepositoryType>git</RepositoryType>
+	  <PackageOutputPath>bin\Release\net6.0\publish\nuget</PackageOutputPath>
+	  <FileVersion>1.0.1-release</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+</Project>

@@ -3,3 +3,13 @@
 /x64
 /CPlusPlus/Debug_Windows_Cpp/x64
 /CPlusPlus/TheColdWorldConfigEditer_Windows/x64
+/CSharp/TheColdWorldConfigEditer/obj
+/CSharp/Debug_Csharp/bin/Debug/net6.0
+/CSharp/Debug_Csharp/obj
+/CSharp/TheColdWorldConfigEditer/bin/Debug/net6.0
+/CSharp/Debug_Csharp/Debug_Csharp.csproj
+/CSharp/Debug_Csharp
+/CSharp/TheColdWorldConfigEditer/bin/Release/net6.0
+/CSharp/TheColdWorldConfigEditer/Properties/PublishProfiles
+/CSharp/TheColdWorldConfigEditer/Properties
+/CSharp/TheColdWorldConfigEditer/bin/Debug
