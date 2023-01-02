@@ -16,3 +16,5 @@
 /CSharp/TheColdWorldConfigEditer_.net7/bin
 /CSharp/TheColdWorldConfigEditer_.net7/Properties
 *.bat
+CSharp/TheColdWorldConfigEditer_.net7/nuget.exe
+CSharp/TheColdWorldConfigEditer/nuget.exe
