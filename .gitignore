@@ -10,7 +10,9 @@
 /CSharp/Debug_Csharp/Debug_Csharp.csproj
 /CSharp/Debug_Csharp
 /CSharp/TheColdWorldConfigEditer/bin/Release/net6.0
-/CSharp/TheColdWorldConfigEditer/Properties/PublishProfiles
 /CSharp/TheColdWorldConfigEditer/Properties
 /CSharp/TheColdWorldConfigEditer/bin/Debug
-/打包.bat
+/CSharp/TheColdWorldConfigEditer_.net7/obj
+/CSharp/TheColdWorldConfigEditer_.net7/bin
+/CSharp/TheColdWorldConfigEditer_.net7/Properties
+*.bat
