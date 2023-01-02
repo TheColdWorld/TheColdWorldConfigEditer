@@ -821,7 +821,7 @@
         }
     }
 
-    public class NotSerializationExpection : ApplicationException
+    public class NotSerializationExpection : System.ApplicationException
     {
         public NotSerializationExpection(string Message) : base(Message) { }
     }

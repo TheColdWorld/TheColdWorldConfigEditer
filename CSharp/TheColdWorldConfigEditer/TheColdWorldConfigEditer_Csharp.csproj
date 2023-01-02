@@ -1,12 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net7.0;net6.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>annotations</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <Title>TheColdWorldConfigEditer</Title>
     <SignAssembly>False</SignAssembly>
+    <LangVersion>10.0</LangVersion>
 	 <PackageId>TheColdWorldConfigEditer_Csharp</PackageId>
      <Version>1.0.1</Version>
      <Authors>TheColdWorld</Authors>
@@ -19,8 +21,8 @@
 	  <PackageReadmeFile>README.md</PackageReadmeFile>
 	  <PublishRepositoryUrl>true</PublishRepositoryUrl>
 	  <RepositoryType>git</RepositoryType>
-	  <PackageOutputPath>..\publish\nuget\.NET6.0</PackageOutputPath>
-	  <FileVersion>1.0.1.1</FileVersion>
+	  <PackageOutputPath>..\publish\nuget\.NET</PackageOutputPath>
+	  <FileVersion>1.0.1.2</FileVersion>
 	  <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
 
