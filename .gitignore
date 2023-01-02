@@ -8,4 +8,5 @@
 /CSharp/TheColdWorldConfigEditer/bin
 /CSharp/TheColdWorldConfigEditer/obj
 *.bat
-CSharp/publish
+/CSharp/publish
+/CSharp/TheColdWorldConfigEditer/TheColdWorldConfigEditer_Csharp.csproj.user
