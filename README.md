@@ -1,8 +1,8 @@
 # TheColdWorldConfigEditer
-An implementation of a way to set it up
-
+A solution that stores settings in a file
+一种将设置储存在文件的解决方案
 Auther:TheColdWorld
-# A example
+# Set the file format
 
 ```
 Headle:
