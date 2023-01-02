@@ -18,3 +18,4 @@
 *.bat
 CSharp/TheColdWorldConfigEditer_.net7/nuget.exe
 CSharp/TheColdWorldConfigEditer/nuget.exe
+CSharp/publish
