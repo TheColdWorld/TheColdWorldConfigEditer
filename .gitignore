@@ -10,3 +10,9 @@
 *.bat
 /CSharp/publish
 /CSharp/TheColdWorldConfigEditer/TheColdWorldConfigEditer_Csharp.csproj.user
+/CPlusPlus/Debug_Cpp/x64
+/CPlusPlus/Debug_Cpp/Release
+/Publish
+/CPlusPlus/TheColdWorldConfigEditer_Windows/x64
+/CPlusPlus/TheColdWorldConfigEditer_Windows/Release
+/Release

@@ -9,11 +9,5 @@
 
 // 添加要在此处预编译的标头
 #include "framework.h"
-#include <iostream>
-#include <string>
-#include <fstream>
-#include "structures.h"
-#include <vector>
-#include <codecvt>
-#define TheColdWorldConfigEditer_Windows_Dll
+
 #endif //PCH_H

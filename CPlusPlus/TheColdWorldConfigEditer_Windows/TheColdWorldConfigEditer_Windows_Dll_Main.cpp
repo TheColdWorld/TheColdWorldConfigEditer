@@ -1,258 +1,525 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "TheColdWorldConfigEditer_Windows_Dll_Header.h"
 #include "structures.h"
 namespace std
 {
-	inline std::wstring to_wstring(const std::string& input)
-	{
-		std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-		return converter.from_bytes(input);
-	}
+    inline std::wstring to_wstring(const std::string& input)
+    {
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        return converter.from_bytes(input);
+    }
+    inline std::string to_string(const std::wstring& input)
+    {
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        return converter.to_bytes(input);
+    }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="str">要分割的字符串</param>
+    /// <param name="pattern">分隔符</param>
+    /// <returns>std::vector</returns>
+    vector<wstring> split(const wstring& str,const wstring& pattern)
+    {
+        vector<wstring> res;
+        if (str == L"")
+        {
+            return vector<wstring>(res);
+        }
+        //在字符串末尾也加入分隔符，方便截取最后一段
+        wstring strs = str + pattern;
+        uint64 pos = strs.find(pattern);
+
+        while (pos != strs.npos)
+        {
+            wstring temp = strs.substr(0, pos);
+            res.push_back(temp);
+            //去掉已分割的字符串,在剩下的字符串中进行分割
+            strs = strs.substr(pos + 1, strs.size());
+            pos = strs.find(pattern);
+        }
+        return vector<wstring>(res);
+    }
 }
-int32 GetFileAllLines(const wchar_t* FilePath,std::vector<std::wstring>& OutArray, int32& ArrayLength)
+TheColdWorldConfigEditer::For_String::Headers::Headers(const Headers& Others)
 {
-	if (_waccess_s(FilePath, 0) != 0) return -1;
-	FILE* FileStream = 0;
-	_wfopen_s(&FileStream, FilePath, L"r");
-	if (FileStream == 0) return -2;
-	fseek(FileStream, -1L, 2);
-	int32 FileLength = ftell(FileStream);
-	int32 Lines = 0;
-	rewind(FileStream);
-	while (!feof(FileStream))
-	{
-		char* buf = new char[FileLength];
-		fgets(buf, FileLength, FileStream);
-		memset(buf, 0, sizeof(char));
-		Lines++;
-	}
-	rewind(FileStream);
-	std::vector<std::string> FileInfo;
-	for (int32 l = 0; !feof(FileStream); l++)
-	{
-		char* buf = new char[FileLength];
-		fgets(buf, FileLength, FileStream);
-		FileInfo.push_back(buf);
-		memset(buf, 0, sizeof(char));
-	}
-	fclose(FileStream);
-	for (int32 i = 0; i < FileInfo.size()-1; i++)
-	{
-		FileInfo[i].replace(FileInfo[i].find_last_of("\n"), sizeof(char), "\0");
-	}
-	ArrayLength = FileInfo.size();
-	if (OutArray.size() != 0)	OutArray.clear();
-	for (int32 i = 0; i < FileInfo.size(); i++)
-	{
-		OutArray.push_back(std::to_wstring(FileInfo[i]));
-	}
-	memset(FileStream, 0, sizeof(FILE*));
-	memset(&FileLength, 0, sizeof(int32));
-	memset(&FileInfo, 0, sizeof(std::vector<std::string>));
-	memset(&Lines, 0, sizeof(int32));
-	return 0;
+    this->_HeaderArray = std::vector<Header>(Others._HeaderArray);
+    this->_HeaderNameArray = std::vector<std::wstring>(Others._HeaderNameArray);
+    this->_Serializedstring = std::wstring(Others._Serializedstring);
+    this->_SerializedstringArray = std::vector<std::wstring>(Others._SerializedstringArray);
 }
-int32 GetFileAllLines(const wchar_t* FilePath, std::vector<std::wstring>& OutArray, int64& ArrayLength)
+TheColdWorldConfigEditer::For_String::Headers::Headers(const std::vector<std::wstring> SerializedstringArray)
 {
-	if (_waccess_s(FilePath, 0) != 0) return -1;
-	FILE* FileStream = 0;
-	_wfopen_s(&FileStream, FilePath, L"r");
-	if (FileStream == 0) return -2;
-	fseek(FileStream, -1L, 2);
-	int32 FileLength = ftell(FileStream);
-	int32 Lines = 0;
-	rewind(FileStream);
-	while (!feof(FileStream))
-	{
-		char* buf = new char[FileLength];
-		fgets(buf, FileLength, FileStream);
-		memset(buf, 0, sizeof(char));
-		Lines++;
-	}
-	rewind(FileStream);
-	std::vector<std::string> FileInfo;
-	for (int32 l = 0; !feof(FileStream); l++)
-	{
-		char* buf = new char[FileLength];
-		fgets(buf, FileLength, FileStream);
-		FileInfo.push_back(buf);
-		memset(buf, 0, sizeof(char));
-	}
-	fclose(FileStream);
-	for (int32 i = 0; i < FileInfo.size() - 1; i++)
-	{
-		FileInfo[i].replace(FileInfo[i].find_last_of("\n"), sizeof(char), "\0");
-	}
-	ArrayLength = FileInfo.size();
-	if (OutArray.size() != 0)	OutArray.clear();
-	for (int32 i = 0; i < FileInfo.size(); i++)
-	{
-		OutArray.push_back(std::to_wstring(FileInfo[i]));
-	}
-	memset(FileStream, 0, sizeof(FILE*));
-	memset(&FileLength, 0, sizeof(int32));
-	memset(&FileInfo, 0, sizeof(std::vector<std::string>));
-	memset(&Lines, 0, sizeof(int32));
-	return 0;
+    std::vector<std::vector<uint64>> tmp1;
+    for (uint64 i = 0; i < SerializedstringArray.size(); i++)
+    {
+        if (SerializedstringArray[i][SerializedstringArray[i].length() - 1] == L':')
+        {
+            if (SerializedstringArray[i + 1] == L"{")
+            {
+                bool findable = false;
+                for (uint64 ii = i; ii < SerializedstringArray.size() && !findable; ii++)
+                {
+                    if (SerializedstringArray[ii] == L"}")
+                    {
+                        std::vector<uint64> ttmp;
+                        ttmp.push_back(uint64(i));
+                        ttmp.push_back(uint64(ii));
+                        tmp1.push_back(std::vector<uint64>(ttmp));
+                        i = ii;
+                        findable = true;
+                    }
+                }
+            }
+        }
+    }
+    std::vector<std::wstring> tmp2; 
+    for (uint64 i = 0; i < tmp1.size(); i++)
+    {
+        tmp2.clear();
+        for (uint64 ii = tmp1[i][0]; ii < tmp1[i][1]+1; ii++)
+        {
+            tmp2.push_back(std::wstring(SerializedstringArray[ii]));
+        }
+        Header tmp3(tmp2);
+        this->_HeaderArray.push_back(Header(tmp3, this));
+    }
+    this->Update();
+    return;
 }
-int32 GetFileAllLines(const wchar_t* FilePath, std::vector<std::wstring>& OutArray, int16& ArrayLength)
+TheColdWorldConfigEditer::For_String::Headers::Headers(const std::wstring Serializedstring)
 {
-	if (_waccess_s(FilePath, 0) != 0) return -1;
-	FILE* FileStream = 0;
-	_wfopen_s(&FileStream, FilePath, L"r");
-	if (FileStream == 0) return -2;
-	fseek(FileStream, -1L, 2);
-	int32 FileLength = ftell(FileStream);
-	int32 Lines = 0;
-	rewind(FileStream);
-	while (!feof(FileStream))
-	{
-		char* buf = new char[FileLength];
-		fgets(buf, FileLength, FileStream);
-		memset(buf, 0, sizeof(char));
-		Lines++;
-	}
-	rewind(FileStream);
-	std::vector<std::string> FileInfo;
-	for (int32 l = 0; !feof(FileStream); l++)
-	{
-		char* buf = new char[FileLength];
-		fgets(buf, FileLength, FileStream);
-		FileInfo.push_back(buf);
-		memset(buf, 0, sizeof(char));
-	}
-	fclose(FileStream);
-	for (int32 i = 0; i < FileInfo.size()-1; i++)
-	{
-		FileInfo[i].replace(FileInfo[i].find_last_of("\n"), sizeof(char), "\0");
-	}
-	ArrayLength = FileInfo.size();
-	if (OutArray.size() != 0)	OutArray.clear();
-	for (int32 i = 0; i < FileInfo.size(); i++)
-	{
-		OutArray.push_back(std::to_wstring(FileInfo[i]));
-	}
-	memset(FileStream, 0, sizeof(FILE*));
-	memset(&FileLength, 0, sizeof(int32));
-	memset(&FileInfo, 0, sizeof(std::vector<std::string>));
-	memset(&Lines, 0, sizeof(int32));
-	return 0;
+    std::vector<std::wstring> WstrArray = std::split(Serializedstring, L"\n");
+    std::vector<std::vector<uint64>> tmp1;
+    for (uint64 i = 0; i < WstrArray.size(); i++)
+    {
+        if (WstrArray[i][WstrArray[i].length() - 1] == L':')
+        {
+            if (WstrArray[i + 1] == L"{")
+            {
+                bool findable = false;
+                for (uint64 ii = i; ii < WstrArray.size() && !findable; ii++)
+                {
+                    if (WstrArray[ii] == L"}")
+                    {
+                        std::vector<uint64> ttmp;
+                        ttmp.push_back(uint64(i));
+                        ttmp.push_back(uint64(ii));
+                        tmp1.push_back(std::vector<uint64>(ttmp));
+                        i = ii;
+                        findable = true;
+                    }
+                }
+            }
+        }
+    }
+    std::vector<std::wstring> tmp2;
+    for (uint64 i = 0; i < tmp1.size(); i++)
+    {
+        tmp2.clear();
+        for (uint64 ii = tmp1[i][0]; ii < tmp1[i][1] + 1; ii++)
+        {
+            tmp2.push_back(std::wstring(WstrArray[ii]));
+        }
+        Header tmp3(tmp2);
+        this->_HeaderArray.push_back(Header(tmp3, this));
+    }
+    this->Update();
+    return;
 }
-int32 GetFileAllHeadersList(const wchar_t* FilePath, std::vector<std::wstring>& Headers)
+TheColdWorldConfigEditer::For_String::Header& TheColdWorldConfigEditer::For_String::Headers::operator[](const std::wstring& HeaderName)
 {
-	if (_waccess_s(FilePath, 0) != 0) return -1;
-	int64 FileLines;
-	std::vector<std::wstring> FileAllLines;
-	int32 Returns = GetFileAllLines(FilePath, FileAllLines, FileLines);
-	if (Returns != 0) return Returns;
-	memset(&Returns, 0, sizeof(int32));
-	if (Headers.size() != 0)	Headers.clear();
-	for (int64 i = 0; i < FileLines; i++)
-	{
-		if (FileAllLines[i][0] == L'/' && FileAllLines[i][1] == L'/')continue;
-		if (FileAllLines[i].length() == 0) continue;
-		if (FileAllLines[i][FileAllLines[i].length()-1] == L':')
-		{
-			if (FileAllLines[i + 1] != L"{") continue;
-			std::wstring str= FileAllLines[i];
-			str.replace(str.find_last_of(L":"), sizeof(L":"), L"");
-			Headers.push_back(str);
-			memset(&str, 0, sizeof(std::wstring));
-		}
-	}
-	memset(&FileLines, 0, sizeof(int32));
-	memset(&FileAllLines, 0, sizeof(std::vector<std::wstring>));
-	return 0;
+    this->Update();
+    uint64 SIndex; bool Finded = false;
+    for (uint64 i = 0; i < this->_HeaderNameArray.size(); i++)
+    {
+        if (this->_HeaderNameArray[i] == HeaderName)
+        {
+            SIndex = i;
+            Finded = true;
+            break;
+        }
+    }
+    if (!Finded) throw new NotFindedExpection(L"未找到Header");
+    else return _HeaderArray[SIndex];
 }
-int32 GetFileAllKeys_Value(const wchar_t* FilePath, const wchar_t* Header, std::vector<std::wstring>& Keys_Values)
+ void TheColdWorldConfigEditer::For_String::Headers::Update()
 {
-	if (_waccess_s(FilePath, 0) != 0) return -1;
-	std::vector<std::wstring> HeaderList;
-	GetFileAllHeadersList(FilePath, HeaderList);
-	bool HaveHeaderAble=false;
-	for (int32 i = 0; i < HeaderList.size(); i++)
-	{
-		if (HeaderList[i] == Header) HaveHeaderAble = true;
-	}
-	if (!HaveHeaderAble) return -2;
-	memset(&HeaderList, 0, sizeof(std::vector<std::wstring>));
-	int64 FileLines;
-	std::vector<std::wstring> FileAllLines;
-	int32 Returns = GetFileAllLines(FilePath, FileAllLines, FileLines);
-	if (Returns != 0) return Returns;
-	memset(&Returns, 0, sizeof(int32));
-	Keys_Values.clear();
-	for (int64 i = 0; i < FileLines; i++)
-	{
-		if (FileAllLines[i][0] == L'/' && FileAllLines[i][1] == L'/')continue;
-		if (FileAllLines[i].length() == 0) continue;
-		if (FileAllLines[i][FileAllLines[i].length()-1] ==L':')
-		{
-			if(FileAllLines[i].replace(FileAllLines[i].find_last_of(L":"),sizeof(wchar_t),L"")== Header)
-			{
-				FileAllLines[i] += L":";
-				if (FileAllLines[++i] != L"{") continue;
-				i++;
-				while (i < FileLines)
-				{
-					if (FileAllLines[i] == L"}") { break; }
-					Keys_Values.push_back(FileAllLines[i++]);
-					
-				}
-			}
-		}
-	}
-	memset(&FileLines, 0, sizeof(int32));
-	memset(&FileAllLines, 0, sizeof(std::vector<std::wstring>));
-	return 0;
+     this->_HeaderNameArray.clear();
+     for (uint64 i = 0; i < this->_HeaderArray.size(); i++)
+     {
+         this->_HeaderNameArray.push_back(std::wstring(this->_HeaderArray[i].Name()));
+     }
+     this->_Serializedstring.clear();
+     for (uint64 i = 0; i < this->_HeaderArray.size(); i++)
+     {
+         this->_Serializedstring += std::wstring(this->_HeaderArray[i].Serializedstring() + L"\n");
+     }
+     this->_Serializedstring += std::wstring(this->_HeaderArray[this->_HeaderArray.size() - 1].Serializedstring());
+     this->_SerializedstringArray = std::split(this->_Serializedstring, L"\n");
+    return;
 }
-int32 GetFileAllKeyList(const wchar_t* FilePath, const wchar_t* Header, std::vector<std::wstring>& KeyList)
+ TheColdWorldConfigEditer::For_String::Headers::~Headers()
+ {
+     this->_Serializedstring.clear();
+     this->_SerializedstringArray.clear();
+     this->_HeaderNameArray.clear();
+     this->_HeaderArray.clear();
+ }
+TheColdWorldConfigEditer::For_String::Value::Value(std::wstring Value) { this->_Value = std::wstring(Value); }
+TheColdWorldConfigEditer::For_String::Value::Value(const Value& Others, Key* FatherPointer) { this->_Value = std::wstring(Others._Value); this->HaveFatherAble = true; this->FatherPotinter = FatherPointer; }
+ void TheColdWorldConfigEditer::For_String::Value::operator=(const Value& WillReplaceValue)
 {
-	if (_waccess_s(FilePath, 0) != 0) return -1;
-	std::vector<std::wstring> HeaderList;
-	GetFileAllHeadersList(FilePath, HeaderList);
-	bool HaveHeaderAble = false;
-	for (int32 i = 0; i < HeaderList.size(); i++)
-	{
-		if (HeaderList[i] == Header) HaveHeaderAble = true;
-	}
-	if (!HaveHeaderAble) return -2;
-	memset(&HeaderList, 0, sizeof(std::vector<std::wstring>));
-	int64 FileLines;
-	std::vector<std::wstring> FileAllLines;
-	int32 Returns = GetFileAllLines(FilePath, FileAllLines, FileLines);
-	if (Returns != 0) return Returns;
-	memset(&Returns, 0, sizeof(int32));
-	KeyList.clear();
-	for (int64 i = 0; i < FileLines; i++)
-	{
-		if (FileAllLines[i][0] == L'/' && FileAllLines[i][1] == L'/')continue;
-		if (FileAllLines[i].length() == 0) continue;
-		if (FileAllLines[i][FileAllLines[i].length() - 1] == L':')
-		{
-			if (FileAllLines[i].replace(FileAllLines[i].find_last_of(L":"), sizeof(wchar_t), L"") == Header)
-			{
-				FileAllLines[i] += L":";
-				if (FileAllLines[++i] != L"{") continue;
-				i++;
-				while (i < FileLines)
-				{
-					if (FileAllLines[i] == L"}") { break; }
-					std::wstring wstr= FileAllLines[i++];
-					KeyList.push_back(wstr.substr(0, wstr.find_last_of(L"=")));
-				}
-			}
-		}
-	}
-	memset(&FileLines, 0, sizeof(int32));
-	memset(&FileAllLines, 0, sizeof(std::vector<std::wstring>));
-	return 0;
+     this->_Value.clear();
+     this->_Value = std::wstring(WillReplaceValue._Value);
+     this->RefResh();
+    return;
 }
-int32 GetFileValue(const std::vector<std::wstring> Keys, const wchar_t* Key, std::wstring& Value)
+const std::wstring TheColdWorldConfigEditer::For_String::Value::ToString()
 {
-	return 0;
+    return  _Value;
 }
-int32 GetFileValue(const wchar_t* FilePath, const wchar_t* Header, const wchar_t* Key, std::wstring& Value)
+int32 TheColdWorldConfigEditer::For_String::Value::ToInt32()
 {
-	return 0;
+    std::string::size_type sz;
+    return std::stoi(_Value,&sz,10);
 }
+int64 TheColdWorldConfigEditer::For_String::Value::ToInt64()
+{
+    std::string::size_type sz;
+    return std::stoll(_Value,&sz,10);
+}
+uint64 TheColdWorldConfigEditer::For_String::Value::ToUInt64()
+{
+    std::string::size_type sz;
+    return  std::stoull(_Value,&sz,10);
+}
+double TheColdWorldConfigEditer::For_String::Value::ToDouble()
+{
+    std::string::size_type sz;
+    return  std::stod(_Value, &sz);
+}
+bool TheColdWorldConfigEditer::For_String::Value::ToBool()
+{
+    std::wstring wstr;
+    std::transform(_Value.begin(), _Value.end(), wstr.begin(), towupper);
+    if (wstr == L"true") return true;
+    else if (wstr == L"false")return false;
+    else throw new WrongValueExpection(L" 在转换Value->Bool出错");
+}
+TheColdWorldConfigEditer::For_String::Value::~Value()
+{
+    _Value.clear();
+}
+void TheColdWorldConfigEditer::For_String::Value::RefResh()
+{
+    if (this->HaveFatherAble) this->FatherPotinter->Update();
+    return;
+}
+const std::wstring TheColdWorldConfigEditer::For_String::Key::ToString()
+{
+    return std::wstring(_Serializedstring);
+}
+const std::wstring TheColdWorldConfigEditer::For_String::Key::Serializedstring()
+{
+    return std::wstring(_Serializedstring);
+}
+TheColdWorldConfigEditer::For_String::Key::Key(std::wstring KeyName, Value value) 
+{
+    this->_Name = std::wstring(KeyName);
+    this->_Value = Value(value);
+    this->_Serializedstring = std::wstring(KeyName + L"=" + value.ToString());
+}
+TheColdWorldConfigEditer::For_String::Key::Key(std::wstring& Serializedstring)
+{
+    std::vector<std::wstring> tmp = std::split(Serializedstring, L"=");
+    switch (tmp.size())
+    {
+    case 0:
+    {throw new NotSerializationExpection(L"在反序列化Key时出错"); }
+    case 1:
+    {
+        this->_Name = std::wstring(tmp[0]);
+        this->_Value = Value(L"");
+    }
+    break;
+    case 2:
+    {
+        this->_Name = std::wstring(tmp[0]);
+        this->_Value = Value(tmp[1]);
+    }
+    break;
+    default:
+    {
+        this->_Name = std::wstring(tmp[0]);
+        std::wstring tmp1;
+        for (int64 i = 1; i < tmp.size() - 1; i++)
+        {
+            tmp1 += tmp[i] + L"=";
+        }
+        tmp1 += tmp[tmp.size() - 1];
+        this->_Value = Value(tmp1);
+    }
+    break;
+    }
+    this->_Serializedstring = std::wstring(Serializedstring);
+}
+TheColdWorldConfigEditer::For_String::Key::Key(const Key& Others, Header* fatherPotinter)
+{
+    this->_Name = std::wstring(Others._Name);
+    this->_Serializedstring = std::wstring(Others._Serializedstring);
+    this->_Value = Value(Others._Value,this);
+    this->HaveFather = true;
+    this->FatherPointer = new Header(*fatherPotinter);
+}
+TheColdWorldConfigEditer::For_String::Value& TheColdWorldConfigEditer::For_String::Key::value(){return _Value;}
+TheColdWorldConfigEditer::For_String::Key& TheColdWorldConfigEditer::For_String::Key::operator=(const Key& WillreplaceKey)
+{
+    this->_Name = std::wstring(WillreplaceKey._Name);
+    if (WillreplaceKey.HaveFather && !this->HaveFather)
+    {
+        this->HaveFather = true;
+        this->FatherPointer = new TheColdWorldConfigEditer::For_String::Header(*WillreplaceKey.FatherPointer);
+    }
+    this->_Value = TheColdWorldConfigEditer::For_String::Value(WillreplaceKey._Value, this);
+    this->Refresh();
+    return *this;
+}
+void TheColdWorldConfigEditer::For_String::Key::value(Value& NewValue)
+{
+    this->_Value.~Value();
+    this->_Value =  Value(NewValue,this);
+    this->Refresh();
+    return;
+}
+const std::wstring TheColdWorldConfigEditer::For_String::Key::Name()
+{
+    return  std::wstring(_Name);
+}
+ void TheColdWorldConfigEditer::For_String::Key::Name(std::wstring NewName)
+{
+     _Name = NewName;
+     Refresh();
+     return;
+}
+ void TheColdWorldConfigEditer::For_String::Key::Refresh()
+ {
+     this->_Serializedstring = std::wstring(this->_Name + L"=" + this->_Value.ToString());
+     if (this->HaveFather)
+     {
+         this->FatherPointer->Update();
+     } 
+     return;
+ }
+ void TheColdWorldConfigEditer::For_String::Key::Update()
+ {
+     this->_Serializedstring = std::wstring(this->_Name + L"=" + this->_Value.ToString());
+     if (this->HaveFather) this->FatherPointer->Update();
+     return ;
+ }
+TheColdWorldConfigEditer::For_String::Key::~Key()
+{
+    this->_Value.~Value();
+    FatherPointer = nullptr;
+    this->_Name.clear();
+    this->_Serializedstring.clear();
+}
+const std::vector<std::wstring> TheColdWorldConfigEditer::For_String::Headers::SerializedstringArray() { return std::vector<std::wstring>(this->_SerializedstringArray); }
+const std::wstring TheColdWorldConfigEditer::For_String::Headers::Serializedstring() { return std::wstring(this->_Serializedstring); }
+void TheColdWorldConfigEditer::For_String::Header::Refresh()
+{
+    this->_KeyNameArray.clear();
+    for (uint64 i = 0; i < this->_KeyArray.size(); i++)
+    { this->_KeyNameArray.push_back(std::wstring(this->_KeyArray[i].Name())); }
+    this->_Serializedstring = std::wstring(this->_Name + L":\n{\n");
+    for (uint64 i = 0; i < this->_KeyArray.size(); i++)
+    {
+        this->_Serializedstring += std::wstring(this->_KeyArray[i].Serializedstring() + L"\n");
+    }
+    this->_Serializedstring += std::wstring(L"}");
+    this->_SerializedstringArray.clear();
+    this->_SerializedstringArray = std::split(_Serializedstring, L"\n"); 
+    if (this->HaveFather) this->FatherPointer->Update();
+}
+void TheColdWorldConfigEditer::For_String::Header::Update()
+{
+    this->_KeyNameArray.clear();
+    for (uint64 i = 0; i < this->_KeyArray.size(); i++)
+    {
+        this->_KeyNameArray.push_back((std::wstring(this->_KeyArray[i].Name())));
+    }
+    this->_Serializedstring = std::wstring(this->_Name + L":\n{\n");
+    for (uint64 i = 0; i < this->_KeyArray.size(); i++)
+    {
+        this->_Serializedstring += std::wstring(this->_KeyArray[i].Serializedstring() + L"\n");
+    }
+    this->_Serializedstring += std::wstring(L"}");
+    this->_SerializedstringArray.clear();
+    this->_SerializedstringArray = std::split(_Serializedstring, L"\n");
+    return;
+}
+TheColdWorldConfigEditer::For_String::Header::Header(std::wstring Serializedstring)
+{
+    std::vector<std::wstring> __SerializedstringArray = std::split(Serializedstring, L"\n");
+    if (__SerializedstringArray[0][__SerializedstringArray[0].length() - 1] != L':') throw new NotSerializationExpection(L"在反序列化Header时出错");
+    if (__SerializedstringArray[1][__SerializedstringArray[1].length() - 1] != L'{') throw new NotSerializationExpection(L"在反序列化Header时出错");
+    if (__SerializedstringArray[__SerializedstringArray.size() - 1][__SerializedstringArray[__SerializedstringArray.size() - 1].length() - 1] != L'}') throw new NotSerializationExpection(L"在反序列化Header时出错");
+    this->_Name = std::wstring(__SerializedstringArray[1]);
+    this->_Name.pop_back();
+    for (uint64 i = 2; i < __SerializedstringArray.size() - 1; i++)
+    {
+        std::vector<std::wstring> tmp = std::split(__SerializedstringArray[i], L"=");
+        if (tmp.size() == 0) continue;
+        else
+        {
+           this-> _KeyNameArray.push_back(std::wstring(tmp[0]));
+            Key ktmp(__SerializedstringArray[i]);
+            this->_KeyArray.push_back(Key(ktmp,this));
+        }
+    }
+    this->Refresh();
+    return;
+}
+TheColdWorldConfigEditer::For_String::Header::Header(std::vector<std::wstring> SerializedstringArray)
+{
+    if (SerializedstringArray[0][SerializedstringArray[0].length() - 1] != L':') throw new NotSerializationExpection(L"在反序列化Header时出错");
+    if (SerializedstringArray[1][SerializedstringArray[1].length() - 1] != L'{') throw new NotSerializationExpection(L"在反序列化Header时出错");
+    if (SerializedstringArray[SerializedstringArray.size() - 1][SerializedstringArray[SerializedstringArray.size() - 1].length() - 1] != L'}') throw new NotSerializationExpection(L"在反序列化Header时出错");
+    this->_Name = std::wstring(SerializedstringArray[0]);
+    this->_Name.pop_back();
+    for (uint64 i = 2; i < SerializedstringArray.size() - 1; i++)
+    {
+        std::vector<std::wstring> tmp = std::split(SerializedstringArray[i], L"=");
+        if (tmp.size() == 0) continue;
+        else
+        {
+            this->_KeyNameArray.push_back(std::wstring(tmp[0]));
+            Key ktmp(SerializedstringArray[i]);
+            this->_KeyArray.push_back(Key(ktmp, this));
+            memset(&ktmp, 0, sizeof(ktmp));
+        }
+    }
+    this->Refresh();
+    return;
+}
+TheColdWorldConfigEditer::For_String::Header::Header(std::wstring Name, std::vector<Key>& KeyArray)
+{
+    this->_Name = std::wstring(Name);
+    this->_KeyArray = std::vector<Key>();
+    for(uint64 i=0;i< KeyArray.size();i++)
+    {
+        _KeyArray.push_back(Key(KeyArray[i], this));
+    }
+    this->Refresh();
+    return;
+}
+TheColdWorldConfigEditer::For_String::Header::Header(const Header& Header, Headers* FartherPointer)
+{
+    this->_KeyArray = std::vector<Key>();
+    for (uint64 i = 0; i < Header._KeyArray.size() - 1; i++)
+    {
+        _KeyArray.push_back(Key(Header._KeyArray[i], this));
+    }
+    this->_Name = std::wstring(Header._Name);
+    this->_KeyNameArray = std::vector<std::wstring>(Header._KeyNameArray);
+    this->_Serializedstring = std::wstring(Header._Serializedstring);
+    this->_SerializedstringArray = std::vector<std::wstring>(Header._SerializedstringArray);
+    this->HaveFather = true;
+    this->FatherPointer = FartherPointer;
+}
+void TheColdWorldConfigEditer::For_String::Header::Add(Key& NewKey)
+{
+    uint64 index; bool findable = false;
+    for (uint64 i = 0; i < this->_KeyNameArray.size(); i++)
+    {
+        if (this->_KeyNameArray[i] == NewKey.Name())
+        {
+            index = i; findable = true; break;
+        }
+    }
+    if (findable)
+    {
+       this->_KeyArray[index] = Key(NewKey,this);
+    }
+    else
+    {
+       this-> _KeyArray.push_back(Key(NewKey, this));
+    }
+   this-> Refresh();
+    return;
+}
+void TheColdWorldConfigEditer::For_String::Header::Delete(std::wstring WillDeleteKeyName)
+{
+    std::vector<Key>::iterator index;
+    for (index = this->_KeyArray.begin(); index != this->_KeyArray.end();)
+    {
+        if (index->Name() == WillDeleteKeyName)
+        {
+            index= this->_KeyArray.erase(index);
+            break;
+        }
+        else
+        {
+            ++index;
+        }
+    }
+    this->Refresh();
+    return;
+}
+uint64 TheColdWorldConfigEditer::For_String::Header::Length()
+{
+    return uint64(this->_KeyArray.size());
+}
+TheColdWorldConfigEditer::For_String::Key& TheColdWorldConfigEditer::For_String::Header::operator[](const std::wstring& KeyName)
+{
+    this->Refresh();
+    uint64 index; bool findable = false;
+    for (uint64 i = 0; i < this->_KeyNameArray.size(); i++)
+    {
+        if (this->_KeyNameArray[i] == KeyName)
+        {
+            index = i; findable = true; break;
+        }
+    }
+    if (findable)
+    {
+        return this->_KeyArray[index];
+    }
+    else throw new NotFindedExpection(L"未找到Key");
+}
+TheColdWorldConfigEditer::For_String::Header& TheColdWorldConfigEditer::For_String::Header::operator=(const Header ReplaceHeader)
+{
+    this->_KeyArray = std::vector<Key>(ReplaceHeader._KeyArray);
+    this->_Name =std::wstring (ReplaceHeader._Name);
+    this->_KeyNameArray =std::vector<std::wstring>(ReplaceHeader._KeyNameArray);
+    this->_Serializedstring = std::wstring(ReplaceHeader._Serializedstring);
+    this->_SerializedstringArray =std::vector<std::wstring>(ReplaceHeader._SerializedstringArray);
+    return *this;
+}
+const std::wstring TheColdWorldConfigEditer::For_String::Header::Serializedstring()
+{
+    return std::wstring(this->_Serializedstring);
+}
+const std::vector<std::wstring> TheColdWorldConfigEditer::For_String::Header::SerializedstringArray()
+{
+    return  std::vector<std::wstring>(this->_SerializedstringArray);
+}
+const std::wstring TheColdWorldConfigEditer::For_String::Header::ToString()
+{
+    return  std::wstring(this->_Serializedstring);
+}
+const std::wstring TheColdWorldConfigEditer::For_String::Header::Name()
+{
+    return std::wstring(this->_Name);
+}
+TheColdWorldConfigEditer::For_String::Header::~Header()
+{
+    this->_KeyNameArray.clear();
+    this->_KeyArray.clear();
+    this->_Serializedstring.clear();
+    this->_SerializedstringArray.clear();
+    this->FatherPointer = nullptr;
+}
+TheColdWorldConfigEditer::NotSerializationExpection::NotSerializationExpection(std::wstring Message) : exception(std::to_string(Message).c_str()){}
+TheColdWorldConfigEditer::NotFindedExpection::NotFindedExpection(std::wstring Message) : exception(std::to_string(Message).c_str()) {}
+TheColdWorldConfigEditer::WrongValueExpection::WrongValueExpection(std::wstring Message) : exception(std::to_string(Message).c_str()) {}
