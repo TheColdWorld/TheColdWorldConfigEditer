@@ -162,7 +162,7 @@
                     {
                         Temp2[k] = SerializedstringArray[ii];
                     }
-                    HeadersArray[i] = new Header(Temp2);
+                    HeadersArray[i] = new Header(Temp2,this);
                 }
                 Refresh();
             }
@@ -209,7 +209,7 @@
                     {
                         Temp2[k] = SerializedstringArray[ii];
                     }
-                    HeadersArray[i] = new Header(Temp2);
+                    HeadersArray[i] = new Header(Temp2,this);
                 }
                 Refresh();
             }
@@ -219,7 +219,11 @@
             /// <param name="Headers"></param>
             public Headers(Header[] Headers)
             {
-                HeadersArray = Headers;
+                HeadersArray = new Header[Headers.Length];
+                for (int i = 0; i < Headers.Length; i++)
+                {
+                    HeadersArray[i] = new(Headers[i].SerializedString, this);
+                }
                 Refresh();
             }
             /// <summary>
@@ -237,35 +241,41 @@
             /// </summary>
             /// <param name="KeyName">头的名字</param>
             /// <returns>输入名字对应的头<br/>找不到就返回 null</returns>
-            public Header GetHeader(string Header)
+            public ref Header GetHeader(string HeaderName)
             {
                 int Index = 0;bool Finded = false;
                 for (; Index < HeaderNameList.Length; Index++)
                 {
-                    if (HeaderNameList[Index] == Header) { Finded = true; break; }
+                    if (HeaderNameList[Index] == HeaderName) { Finded = true; break; }
                 }
-                if (Finded) return HeadersArray[Index];
-                else return null;
+                if (Finded) return ref HeadersArray[Index];
+                else throw new ItemNotFoundExpection("Header \'" + HeaderName + "\' not found");
             }
             /// <summary>
             /// 替换某个头的所有内容
             /// </summary>
-            /// <param name="WillReplace">要被替换的头</param>
-            /// <param name="ReplaceItem">替换后的头</param>
-            /// <returns>成功为 true否则为 false</returns>
-            public bool Replace(Header WillReplace, Header ReplaceItem)
+            /// <param name="WillReplaceHeaderName">将要替换的头的名字</param>
+            /// <param name="WillReplaceItem">将要替换成的头</param>
+            public void Replace(string WillReplaceHeaderName, Header WillReplaceItem)
             {
-                int index = 0;bool returns = false ;
-                for (; index < Length; index++)
+                int Index = 0;bool Finded = false;
+                for (; Index < Length; Index++)
                 {
-                    if (HeadersArray[index] == WillReplace) { returns = true; break; }
+                    if (HeadersArray[Index].Name == WillReplaceHeaderName)
+                    {
+                        Finded = true;break;
+                    }
                 }
-                if (returns)
+                if(Finded)
                 {
-                    HeadersArray[index] = ReplaceItem;
+                    HeadersArray[Index].Replace(new(WillReplaceItem.SerializedString, this));
+                    Refresh();
+                    return;
                 }
-                Refresh();
-               return returns;
+                else
+                {
+                    throw new ItemNotFoundExpection("Header \'" + WillReplaceHeaderName + "\' not found");
+                }
             }
             /// <summary>
             /// 添加头<br/>
@@ -273,7 +283,7 @@
             /// </summary>
             /// <param name="AddHeader"></param>
             /// <returns>是否成功<br/>成功为 true，否则为 false</returns>
-            public bool Add(Header AddHeader)
+            public void Add(in Header AddHeader)
             {
                 int index = 0;bool Replaceable=false;
                 for (; index < Length; index++)
@@ -282,7 +292,7 @@
                 }
                 if (Replaceable)
                 {
-                    return Replace(HeadersArray[index], AddHeader);
+                    HeadersArray[index].Replace(new(AddHeader.SerializedString, this));
                 }
                 else
                 {
@@ -291,10 +301,10 @@
                     {
                         Temp[i] = HeadersArray[i];
                     }
-                    Temp[Length] = AddHeader;
+                    Temp[Length] = new(AddHeader.SerializedString,this);
                     HeadersArray = Temp;
                     Refresh();
-                    return true;
+                    return;
                 }
                 
             }
@@ -314,14 +324,6 @@
             }
             public void Refresh()
             {
-                for (int i = 0; i < Length; i++)
-                {
-                    for (int ii = 0; ii < HeadersArray[i].Length; ii++)
-                    {
-                        HeadersArray[i].Keys[ii].Refresh();
-                    }
-                    HeadersArray[i].Refresh();
-                }
                 HeaderNameList = new string[Length];
                 for (int i = 0; i < Length; i++)
                 {
@@ -339,18 +341,31 @@
             /// 其中头的数量
             /// </summary>
             public int Length { get { return HeadersArray.Length; } }
-            public Header[] HeadersArray;
+            private Header[] HeadersArray;
             private string[] HeaderNameList;
             /// <summary>
-            /// 序列化的字符串，等价于.ToString()
+            /// 序列化的字符串，等价于this.ToString()
             /// </summary>
             public string SerializedString { get { return _SerializedString; } private set { _SerializedString = value; } }
             private string _SerializedString;
             /// <summary>
-            /// 序列化的字符串数组，等价于.ToStringArray()
+            /// 序列化的字符串数组，等价于this.ToStringArray()
             /// </summary>
             public string[] SerializedStringArray { get { return _SerializedStringArray; } private set { _SerializedStringArray = value; } }
             private string[] _SerializedStringArray;
+            public ref Header this[string HeaderName] 
+            {
+                get 
+                {
+                    int Index = 0; bool Finded = false;
+                    for (; Index < HeaderNameList.Length; Index++)
+                    {
+                        if (HeaderNameList[Index] == HeaderName) { Finded = true; break; }
+                    }
+                    if (Finded) return ref HeadersArray[Index];
+                    else throw new ItemNotFoundExpection("Header \'" + HeaderName + "\' not found");
+                }
+            }
         }
         public class Header
         {
@@ -365,12 +380,12 @@
                 _SerializedStringArray = _SerializedString.Split(new string[] { "\n"},System.StringSplitOptions.None);
                 if (_SerializedStringArray[0][_SerializedStringArray[0].Length - 1] != ':') throw new NotSerializationExpection("在反序列化头时出错");
                 if (_SerializedStringArray[1] != "{") throw new NotSerializationExpection("在反序列化头时出错");
-                if (_SerializedStringArray[_SerializedStringArray.Length - 1] != "]") throw new NotSerializationExpection("在反序列化头时出错");
+                if (_SerializedStringArray[_SerializedStringArray.Length - 1] != "}") throw new NotSerializationExpection("在反序列化头时出错");
                 _Name = _SerializedStringArray[0].Replace(":", string.Empty);
                 Keys = new Key[_SerializedStringArray.Length - 3];
                 for (int i = 2, k = 0; i < _SerializedStringArray.Length - 1; i++, k++)
                 {
-                    Keys[k] = new Key(_SerializedStringArray[i]);
+                    Keys[k] = new Key(_SerializedStringArray[i],this);
                 }
                 KeysNameList = new string[Keys.Length];
                 for (int i = 0; i < Keys.Length; i++)
@@ -393,7 +408,7 @@
                 Keys = new Key[_SerializedStringArray.Length - 3];
                 for (int i = 2,k=0; i < _SerializedStringArray.Length - 1; i++,k++)
                 {
-                    Keys[k] = new Key(_SerializedStringArray[i]);
+                    Keys[k] = new Key(_SerializedStringArray[i],this);
                 }
                 KeysNameList = new string[Keys.Length];
                 for (int i = 0; i < Keys.Length; i++)
@@ -415,8 +430,88 @@
             public Header(string HeaderName, Key[] keys)
             {
                 _Name = HeaderName;
-                Keys = keys;
+                Keys = new Key[keys.Length];
+                for (int i = 0; i < keys.Length; i++)
+                {
+                    Keys[i] = new(keys[i].SerializedString, this);
+                }
                 Refresh();
+            }
+            /// <summary>
+            /// 构造函数:反序列化:带上一级
+            /// </summary>
+            /// <param name="SerializedstringArray">序列化后的字符串</param>
+            /// <param name="Father">上一级(通常是this)</param>
+            /// <exception cref="NotSerializationExpection"></exception>
+            public Header(string Serializedstring,Headers Father)
+            {
+                _SerializedString = Serializedstring;
+                _SerializedStringArray = _SerializedString.Split(new string[] { "\n" }, System.StringSplitOptions.None);
+                if (_SerializedStringArray[0][_SerializedStringArray[0].Length - 1] != ':') throw new NotSerializationExpection("在反序列化头时出错");
+                if (_SerializedStringArray[1] != "{") throw new NotSerializationExpection("在反序列化头时出错");
+                if (_SerializedStringArray[_SerializedStringArray.Length - 1] != "}") throw new NotSerializationExpection("在反序列化头时出错");
+                _Name = _SerializedStringArray[0].Replace(":", string.Empty);
+                Keys = new Key[_SerializedStringArray.Length - 3];
+                for (int i = 2, k = 0; i < _SerializedStringArray.Length - 1; i++, k++)
+                {
+                    Keys[k] = new Key(_SerializedStringArray[i], this);
+                }
+                KeysNameList = new string[Keys.Length];
+                for (int i = 0; i < Keys.Length; i++)
+                {
+                    KeysNameList[i] = Keys[i].Name;
+                }
+                HaveFather = true;
+                FatherRef = Father;
+            }
+            /// <summary>
+            /// 构造函数:反序列化:带上一级
+            /// </summary>
+            /// <param name="SerializedstringArray">序列化后的字符串数组</param>
+            /// <exception cref="NotSerializationExpection"></exception>
+            public Header(string[] SerializedstringArray,Headers Father)
+            {
+                _SerializedStringArray = SerializedstringArray;
+                if (_SerializedStringArray[0][_SerializedStringArray[0].Length - 1] != ':') throw new NotSerializationExpection("在反序列化头时出错");
+                if (_SerializedStringArray[1] != "{") throw new NotSerializationExpection("在反序列化头时出错");
+                if (_SerializedStringArray[_SerializedStringArray.Length - 1] != "}") throw new NotSerializationExpection("在反序列化头时出错");
+                _Name = _SerializedStringArray[0].Replace(":", string.Empty);
+                Keys = new Key[_SerializedStringArray.Length - 3];
+                for (int i = 2, k = 0; i < _SerializedStringArray.Length - 1; i++, k++)
+                {
+                    Keys[k] = new Key(_SerializedStringArray[i], this);
+                }
+                KeysNameList = new string[Keys.Length];
+                for (int i = 0; i < Keys.Length; i++)
+                {
+                    KeysNameList[i] = Keys[i].Name;
+                }
+                _SerializedString = string.Empty;
+                for (int i = 0; i < _SerializedStringArray.Length - 1; i++)
+                {
+                    _SerializedString += _SerializedStringArray[i] + "\n";
+                }
+                _SerializedString += _SerializedStringArray[_SerializedStringArray.Length - 1];
+                HaveFather = true;
+                FatherRef = Father;
+            }
+            /// <summary>
+            /// 构造函数:序列化:带上一级 
+            /// </summary>
+            /// <param name="HeaderName">头名</param>
+            /// <param name="keys">将要序列化的头所带的所有项</param>
+            /// <param name="Father">上一级(通常是this)</param>
+            public Header(string HeaderName, Key[] keys,Headers Father)
+            {
+                _Name = HeaderName;
+                Keys = new Key[keys.Length];
+                for (int i = 0; i < keys.Length; i++)
+                {
+                    keys[i] = new(keys[i].SerializedString, this);
+                }
+                Refresh();
+                HaveFather = true;
+                FatherRef = Father;
             }
             /// <summary>
             /// 将此项序列化
@@ -438,7 +533,7 @@
             /// </summary>
             /// <param name="KeyName">项的名字</param>
             /// <returns>输入名字对应的项<br/>找不到就返回 null</returns>
-            public Key GetKey(string KeyName)
+            public ref Key GetKey(string KeyName)
             {
                 int Val = 0;bool Finded = false;
                 for (; Val < KeysNameList.Length; Val++)
@@ -447,29 +542,22 @@
                 }
                 if (Finded)
                 {
-                    return Keys[Val];
+                    return ref Keys[Val];
                 }
-                else return null;
+                else throw new ItemNotFoundExpection("Key \'" + KeyName + "\' not found");
             }
             /// <summary>
-            /// 替换项
+            /// 替换头
             /// </summary>
-            /// <param name="WillReplace">要被替换的项</param>
-            /// <param name="ReplaceItem">替换后的项</param>
-            /// <returns>成功为 true否则为 false</returns>
-            public bool Replace(Key WillReplace, Key ReplaceItem)
+            /// <<param name="header">将要输入的头</param>
+            public void Replace(in Header header)
             {
-                int index = 0; bool returns = false;
-                for (; index < Length; index++)
+                Keys = new Key[header.Length];
+                for (int i = 0; i < header.Length; i++)
                 {
-                    if (Keys[index] == WillReplace) { returns = true; break; }
-                }
-                if (returns)
-                {
-                    Keys[index] = ReplaceItem;
+                    Keys[i] = new(header.Keys[i].SerializedString, this);
                 }
                 Refresh();
-                return returns;
             }
             /// <summary>
             /// 将序列化后的字符串覆盖输入文件
@@ -481,22 +569,23 @@
                 FileEditer._in_.FileWrite.Write(FilePath, this);
             }
             /// <summary>
-            /// 添加项<br/>
+            /// 向头中添加项<br/>
             ///  如果有同名的就替换，否则在末尾新增
-            ///  <br/>如果通过上层的GetHeader().Replace()，请在最上层的变量使用Refresh()
             /// </summary>
-            /// <param name="AddHeader"></param>
+            /// <param name="WillAddKey">要添加或替换的项</param>
             /// <returns>是否成功<br/>成功为 true，否则为 false</returns>
-            public bool Add(Key AddHeader)
+            public bool Add(in Key WillAddKey)
             {
                 int index = 0; bool Replaceable=false;
                 for (; index < Length; index++)
                 {
-                    if (Keys[index].Name == AddHeader.Name) { Replaceable = true; break; }
+                    if (Keys[index].Name == WillAddKey.Name) { Replaceable = true; break; }
                 }
                 if (Replaceable)
                 {
-                    return Replace(Keys[index], AddHeader);
+                    Keys[index] = new(WillAddKey.SerializedString,this);
+                    Refresh();
+                    return true;
                 }
                 else
                 {
@@ -505,7 +594,7 @@
                     {
                         Temp[i] = Keys[i];
                     }
-                    Temp[Length] = AddHeader;
+                    Temp[Length] = new(WillAddKey.SerializedString,this);
                     Keys = Temp;
                     Refresh();
                     return true;
@@ -513,20 +602,10 @@
 
             }
             /// <summary>
-            /// <br/>如果通过上层的GetHeader().Replace()，请在最上层的变量使用Refresh()
+            /// 刷新序列化字符串<br/>已实现上层刷新
             /// </summary>
-            /// <param name="DeleteKey">要删除的项</param>
-            public void Delete(Key DeleteKey)
-            {
-                ArrayEditer.DeleteArrayFirstFindedItem(Keys, DeleteKey);
-                Refresh();
-            }
             public void Refresh()
             {
-                for (int i = 0; i < Length; i++)
-                {
-                    Keys[i].Refresh();
-                }
                 KeysNameList = new string[Length];
                 for (int i = 0; i < Length; i++)
                 {
@@ -540,6 +619,7 @@
                 }
                 _SerializedString += "}";
                 SerializedStringArray = _SerializedString.Split(new string[] { "\n" }, System.StringSplitOptions.None);
+                if (HaveFather) FatherRef.Refresh();
             }
             /// <summary>
             /// 键的数量
@@ -557,6 +637,24 @@
             /// </summary>
             public string[] SerializedStringArray { get { return _SerializedStringArray; } private set { _SerializedStringArray = value; } }
             private string[] _SerializedStringArray;
+            public ref Key this[string KeyName]
+            {
+                get
+                {
+                    int Val = 0; bool Finded = false;
+                    for (; Val < KeysNameList.Length; Val++)
+                    {
+                        if (KeysNameList[Val] == KeyName) { Finded = true; break; }
+                    }
+                    if (Finded)
+                    {
+                        return ref Keys[Val];
+                    }
+                    else throw new ItemNotFoundExpection("Key \'" + KeyName + "\' not found");
+                }
+            }
+            private bool HaveFather = false;
+            private Headers FatherRef = null;
         }
         public class Key
         {
@@ -575,13 +673,13 @@
                     case 1:
                         {
                             _Name = array[0];
-                            _Value = new Value(string.Empty);
+                            _Value = new Value(string.Empty,this);
                         }
                         break;
                     case 2:
                         {
                             _Name = array[0];
-                            _Value = new Value(array[1]);
+                            _Value = new Value(array[1],this);
                         }
                         break;
                     default:
@@ -593,10 +691,51 @@
                                 ValueStr += array[i] + "=";
                             }
                             ValueStr += array[array.Length - 1];
-                            _Value = new Value(ValueStr);
+                            _Value = new Value(ValueStr,this);
                         }
                         break;
                 }
+            }
+            /// <summary>
+            /// 构造函数:反序列化:带上一级
+            /// </summary>
+            /// <param name="Serializedstring">经过序列化的字符串</param>
+            /// <param name="Father">上一级应用(通常是this)</param>
+            /// <exception cref="NotSerializationExpection"></exception>
+            public Key(in string Serializedstring,Header Father)
+            {
+                _SerializedString = Serializedstring;
+                string[] array = _SerializedString.Split(new string[] { "=" }, System.StringSplitOptions.None);
+                switch (array.Length)
+                {
+                    case 0: { throw new NotSerializationExpection("在Key的反序列化时出错"); }
+                    case 1:
+                        {
+                            _Name = array[0];
+                            _Value = new Value(string.Empty,this);
+                        }
+                        break;
+                    case 2:
+                        {
+                            _Name = array[0];
+                            _Value = new Value(array[1],this);
+                        }
+                        break;
+                    default:
+                        {
+                            _Name = array[0];
+                            string ValueStr = string.Empty;
+                            for (int i = 1; i < array.Length - 1; i++)
+                            {
+                                ValueStr += array[i] + "=";
+                            }
+                            ValueStr += array[array.Length - 1];
+                            _Value = new Value(ValueStr,this);
+                        }
+                        break;
+                }
+                HaveFather = true;
+                FatherRef = Father;
             }
             /// <summary>
             /// 构造函数:序列化
@@ -606,8 +745,22 @@
             public Key(string KeyName,Value Value)
             {
                 _Name = KeyName;
-                _Value = Value;
+                _Value = new(Value.ToString(),this);
                 _SerializedString = KeyName + "=" + Value.ToString();
+            }
+            /// <summary>
+            /// 构造函数:序列化:带上一级
+            /// </summary>
+            /// <param name="KeyName">要序列化的项名</param>
+            /// <param name="Value">作为这个项的值</param>
+            /// <param name="Father">上一级引用(通常是this)</param>
+            public Key(string KeyName, Value Value ,Header Father)
+            {
+                _Name = KeyName;
+                _Value = new(Value.ToString(),this);
+                _SerializedString = KeyName + "=" + Value.ToString();
+                HaveFather = true;
+                FatherRef = Father;
             }
             /// <summary>
             /// 将此项序列化
@@ -621,35 +774,49 @@
             private string _Name;
             /// <summary>
             /// 将值替换
-            /// <br/>如果通过上层的GetKey().Replace()，请在最上层的变量使用Refresh()
             /// </summary>
-            /// <param name="value">将要替换的值</param>
+            /// <param name="key">将要替换的键</param>
             /// <returns></returns>
-            public void Replace(Value value)
+            public void Replace(Key key)
             {
-                _Value = value;
+                _Value = new(key.Value.ToString(),this);
+                _Name = key.Name;
                 Refresh();
             }
             public void Refresh()
             {
                 _SerializedString = _Name + "=" + _Value.ToString();
+                if (HaveFather) FatherRef.Refresh();
             }
             /// <summary>
             /// 此项对应的值
             /// </summary>
-            public Value Value { get { return _Value; } private set { _Value = value; } }
+            public ref Value Value { get { return ref _Value; } }
             private Value _Value;
             /// <summary>
             /// 序列化的字符串，等价于.ToString()
             /// </summary>
             public string SerializedString{ get { return _SerializedString; } private set { _SerializedString = value; }  }
             private string _SerializedString;
+            private bool HaveFather;
+            private Header FatherRef=null;
         }
         public class Value
         {
             public Value(string Value)
             {
                 _Value = Value;
+            }
+            public Value(string Value, Key Father)
+            {
+                _Value = Value;
+                HaveFather = true;
+                FatherRef = Father;
+            }
+            public void Replace(Value Value)
+            {
+                _Value = Value.ToString();
+                if (HaveFather) FatherRef.Refresh();
             }
             public override string ToString() { return _Value; }
             public int ToInt() { return System.Convert.ToInt32(_Value); }
@@ -662,6 +829,24 @@
             public bool ToBool() { return System.Convert.ToBoolean(_Value); }
             public byte[] ToBytes() { return System.Text.Encoding.UTF8.GetBytes(_Value);} 
             private string _Value;
+            bool HaveFather = false;
+            Key FatherRef = null;
+        }
+        public static string GetRandonString(ulong StringLength)
+        {
+            if (StringLength == 0) return "";
+            System.Random random = new();
+            char[] CharArray = {
+                '1','2','3','4','5','6','7','8','9','0',
+                'A','B','C','D','E','F','G','H','I','J','K','L' ,'M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+                'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'
+            };
+            string Return = string.Empty;
+            for (ulong i = 0; i < StringLength; i++)
+            {
+                Return += CharArray[random.NextInt64(0, CharArray.Length)];
+            }
+            return new string(Return);
         }
     }
     public class FileEditer
@@ -824,5 +1009,9 @@
     public class NotSerializationExpection : System.ApplicationException
     {
         public NotSerializationExpection(string Message) : base(Message) { }
+    }
+    public class ItemNotFoundExpection : System.ApplicationException
+    {
+        public ItemNotFoundExpection(string message) : base(message) { }
     }
 }

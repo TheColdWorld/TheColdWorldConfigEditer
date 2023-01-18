@@ -10,7 +10,7 @@
     <SignAssembly>False</SignAssembly>
     <LangVersion>10.0</LangVersion>
 	 <PackageId>TheColdWorldConfigEditer_Csharp</PackageId>
-     <Version>1.0.1</Version>
+     <Version>1.0.2</Version>
      <Authors>TheColdWorld</Authors>
 	  <PackRelease>true</PackRelease>
 	  <PublishRelease>true</PublishRelease>
@@ -22,7 +22,7 @@
 	  <PublishRepositoryUrl>true</PublishRepositoryUrl>
 	  <RepositoryType>git</RepositoryType>
 	  <PackageOutputPath>..\publish\nuget\.NET</PackageOutputPath>
-	  <FileVersion>1.0.1.2</FileVersion>
+	  <FileVersion>1.0.2.0</FileVersion>
 	  <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
 
