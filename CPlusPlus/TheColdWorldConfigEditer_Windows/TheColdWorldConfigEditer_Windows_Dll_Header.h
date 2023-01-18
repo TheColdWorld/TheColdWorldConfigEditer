@@ -21,6 +21,7 @@ namespace TheColdWorldConfigEditer
 		TheColdWorldConfigEditer_Windows_Dll_Api class Header;
 		TheColdWorldConfigEditer_Windows_Dll_Api class Key;
 		TheColdWorldConfigEditer_Windows_Dll_Api class Value;
+		TheColdWorldConfigEditer_Windows_Dll_Api std::wstring RandonString(uint64 StringLength);
 	}
 	TheColdWorldConfigEditer_Windows_Dll_Api class NotSerializationExpection;
 	TheColdWorldConfigEditer_Windows_Dll_Api class NotFindedExpection;

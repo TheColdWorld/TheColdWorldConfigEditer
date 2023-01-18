@@ -523,3 +523,18 @@ TheColdWorldConfigEditer::For_String::Header::~Header()
 TheColdWorldConfigEditer::NotSerializationExpection::NotSerializationExpection(std::wstring Message) : exception(std::to_string(Message).c_str()){}
 TheColdWorldConfigEditer::NotFindedExpection::NotFindedExpection(std::wstring Message) : exception(std::to_string(Message).c_str()) {}
 TheColdWorldConfigEditer::WrongValueExpection::WrongValueExpection(std::wstring Message) : exception(std::to_string(Message).c_str()) {}
+std::wstring TheColdWorldConfigEditer::For_String::RandonString(uint64 StringLength)
+{
+    if (StringLength == 0) return L"";
+    static wchar_t StringArray[62] = {
+        L'1',L'2',L'3',L'4',L'5',L'6',L'7',L'8',L'9',L'0',
+        L'A',L'B',L'C',L'D',L'E',L'F',L'G',L'H',L'I',L'J',L'K',L'L' ,L'M',L'N',L'O',L'P',L'Q',L'R',L'S',L'T',L'U',L'V',L'W',L'X',L'Y',L'Z',
+        L'a',L'b',L'c',L'd',L'e',L'f',L'g',L'h',L'i',L'j',L'k',L'l',L'm',L'n',L'o',L'p',L'q',L'r',L's',L't',L'u',L'v',L'w',L'x',L'y',L'z'
+    };
+    std::wstring Returns = L"";
+    for (uint64 i = 0; i < StringLength; i++)
+    {
+        Returns += StringArray[rand() % 62];
+    }
+    return std::wstring(Returns);
+}
