@@ -2,7 +2,7 @@
 ## A solution that stores settings in a file
 ## 一种将设置储存在文件的解决方案
 ## Auther:TheColdWorld
-
+# Python part cannot use!
 # Set the file format
 
 ```
